@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrasi - Sistem Perpustakaan</title>
+    <link rel="stylesheet" href="css/auth.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1><i class="fas fa-user-plus"></i> Registrasi Akun</h1>
+                <p>Buat akun baru untuk menjadi anggota perpustakaan</p>
+            </div>
+            
+            <form id="register-form">
+                <div class="form-group">
+                    <label for="reg-name"><i class="fas fa-user"></i> Nama Lengkap</label>
+                    <input type="text" id="reg-name" required placeholder="masukkan nama lengkap">
+                </div>
+                
+                <div class="form-group">
+                    <label for="reg-email"><i class="fas fa-envelope"></i> Email</label>
+                    <input type="email" id="reg-email" required placeholder="masukkan email">
+                </div>
+                
+                <div class="form-group">
+                    <label for="reg-password"><i class="fas fa-lock"></i> Password</label>
+                    <input type="password" id="reg-password" required placeholder="minimal 8 karakter">
+                </div>
+                
+                <div class="form-group">
+                    <label for="reg-password-confirm"><i class="fas fa-lock"></i> Konfirmasi Password</label>
+                    <input type="password" id="reg-password-confirm" required placeholder="ulangi password">
+                </div>
+                
+                <div class="form-group">
+                    <label for="reg-phone"><i class="fas fa-phone"></i> Nomor Telepon</label>
+                    <input type="tel" id="reg-phone" placeholder="opsional">
+                </div>
+                
+                <div class="form-group">
+                    <label for="reg-address"><i class="fas fa-home"></i> Alamat</label>
+                    <textarea id="reg-address" rows="3" placeholder="opsional"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="checkbox">
+                        <input type="checkbox" id="reg-terms" required>
+                        <span>Saya menyetujui <a href="#">syarat dan ketentuan</a></span>
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-user-plus"></i> Daftar Sekarang
+                </button>
+                
+                <div class="auth-footer">
+                    <p>Sudah punya akun? <a href="login.html">Login disini</a></p>
+                    <p>Kembali ke <a href="index.html">Halaman Utama</a></p>
+                </div>
+            </form>
+            
+            <div class="auth-message" id="auth-message"></div>
+        </div>
+    </div>
+    
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Perpustakaan Digital</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+
+  <!-- ✅ FIX: pastikan tidak ada overlay yang nge-block klik + modal open pasti tampil -->
+  <style>
+    #loading { display:none !important; pointer-events:none !important; }
+    .modal { display:none; opacity:0; pointer-events:none; visibility:hidden; }
+    .modal.open {
+      display:flex !important;
+      opacity:1 !important;
+      pointer-events:auto !important;
+      visibility:visible !important;
+      position:fixed !important;
+      inset:0 !important;
+      z-index:9999 !important;
+    }
+    #add-book-btn, #btn-book-refresh { pointer-events:auto !important; }
+  </style>
+</head>
+
+<body>
+  <div id="loading" class="loading" style="display:none;">
+    <div class="spinner"></div>
+    <p>Memuat sistem...</p>
+  </div>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">
+        <i class="fas fa-book-open"></i>
+        <div>
+          <h1>Perpustakaan</h1>
+          <p>Digital Library</p>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <a href="#" class="nav-link active" data-tab="dashboard"><i class="fas fa-home"></i><span>Dashboard</span></a>
+        <a href="#" class="nav-link" data-tab="books"><i class="fas fa-book"></i><span>Buku</span></a>
+        <a href="#" class="nav-link" data-tab="authors"><i class="fas fa-user-edit"></i><span>Penulis</span></a>
+        <a href="#" class="nav-link" data-tab="categories"><i class="fas fa-tags"></i><span>Kategori</span></a>
+        <a href="#" class="nav-link" data-tab="members"><i class="fas fa-users"></i><span>Users (Member)</span></a>
+        <a href="#" class="nav-link" data-tab="borrowRecords"><i class="fas fa-exchange-alt"></i><span>Borrow Records</span></a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <small>© 2024</small>
+        <small id="server-time">Loading...</small>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <span class="muted">Frontend Vanilla • Laravel 10 API</span>
+        </div>
+        <div class="topbar-right">
+          <div class="user-chip">
+            <i class="fas fa-user-circle"></i>
+            <div class="user-chip-text">
+              <div class="user-name" id="user-name">User</div>
+              <div class="user-role" id="user-role">ROLE</div>
+            </div>
+          </div>
+          <button type="button" class="btn btn-danger btn-icon" id="logout-btn" title="Logout">
+            <i class="fas fa-sign-out-alt"></i>
+          </button>
+        </div>
+      </header>
+
+      <main class="content">
+        <!-- DASHBOARD -->
+        <section id="dashboard" class="tab-content active">
+          <div class="page-head">
+            <div>
+              <h2><i class="fas fa-chart-line"></i> Dashboard</h2>
+              <p class="muted">Dashboard ini ambil data dari list endpoint (tanpa endpoint khusus dashboard)</p>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card primary">
+              <div class="stat-icon"><i class="fas fa-book"></i></div>
+              <div class="stat-body">
+                <div class="stat-title">Total Buku</div>
+                <div class="stat-value" id="stat-books">0</div>
+                <div class="stat-meta">Dari <span class="mono">GET /api/books</span></div>
+              </div>
+            </div>
+            <div class="stat-card success">
+              <div class="stat-icon"><i class="fas fa-user-edit"></i></div>
+              <div class="stat-body">
+                <div class="stat-title">Total Penulis</div>
+                <div class="stat-value" id="stat-authors">0</div>
+                <div class="stat-meta">Dari <span class="mono">GET /api/authors</span></div>
+              </div>
+            </div>
+            <div class="stat-card warning">
+              <div class="stat-icon"><i class="fas fa-tags"></i></div>
+              <div class="stat-body">
+                <div class="stat-title">Total Kategori</div>
+                <div class="stat-value" id="stat-categories">0</div>
+                <div class="stat-meta">Dari <span class="mono">GET /api/categories</span></div>
+              </div>
+            </div>
+            <div class="stat-card danger">
+              <div class="stat-icon"><i class="fas fa-exchange-alt"></i></div>
+              <div class="stat-body">
+                <div class="stat-title">Total Borrow Records</div>
+                <div class="stat-value" id="stat-borrow">0</div>
+                <div class="stat-meta">Dari <span class="mono">GET /api/borrow-records</span> (admin/librarian)</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-body">
+              <p class="muted">
+                Catatan: Endpoint <span class="mono">GET /api/borrow-records</span> butuh role Admin/Librarian.
+                Kalau login pakai member, kartu borrow record akan 0 (karena forbidden).
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- BOOKS -->
+        <section id="books" class="tab-content">
+          <div class="page-head">
+            <div>
+              <h2><i class="fas fa-book"></i> Manajemen Buku</h2>
+              <p class="muted">CRUD Buku (admin/librarian). Delete hanya admin.</p>
+            </div>
+            <div style="display:flex; gap:10px;">
+              <button type="button" class="btn btn-primary" id="add-book-btn">
+                <i class="fas fa-plus"></i> Tambah Buku
+              </button>
+              <button type="button" class="btn btn-light" id="btn-book-refresh">
+                <i class="fas fa-sync"></i> Refresh
+              </button>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <div class="search">
+              <i class="fas fa-search"></i>
+              <input id="search-book" type="text" placeholder="Cari judul / ISBN / penulis..." />
+            </div>
+            <select class="select" id="filter-status-book">
+              <option value="all">Semua Status</option>
+              <option value="available">Tersedia</option>
+              <option value="borrowed">Dipinjam</option>
+            </select>
+          </div>
+
+          <div class="table-card">
+            <table class="table" id="books-table">
+              <thead>
+                <tr>
+                  <th width="60">ID</th>
+                  <th>Judul Buku</th>
+                  <th>Penulis</th>
+                  <th>ISBN</th>
+                  <th width="90" class="text-center">Tahun</th>
+                  <th width="80" class="text-center">Stok</th>
+                  <th width="120" class="text-center">Status</th>
+                  <th width="140" class="text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div class="table-footer">
+            <div class="muted">
+              Menampilkan <span id="book-count">0</span> buku
+            </div>
+          </div>
+        </section>
+
+        <!-- AUTHORS -->
+        <section id="authors" class="tab-content">
+          <div class="page-head">
+            <div>
+              <h2><i class="fas fa-user-edit"></i> Penulis</h2>
+              <p class="muted">GET /api/authors • POST/PUT (admin/librarian) • DELETE (admin)</p>
+            </div>
+            <button type="button" class="btn btn-primary" id="add-author-btn"><i class="fas fa-plus"></i> Tambah Penulis</button>
+          </div>
+
+          <div class="table-card">
+            <table class="table" id="authors-table">
+              <thead>
+                <tr>
+                  <th width="60">ID</th>
+                  <th>Nama</th>
+                  <th width="140" class="text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- CATEGORIES -->
+        <section id="categories" class="tab-content">
+          <div class="page-head">
+            <div>
+              <h2><i class="fas fa-tags"></i> Kategori</h2>
+              <p class="muted">GET /api/categories (public) • POST (admin/librarian)</p>
+            </div>
+            <button type="button" class="btn btn-primary" id="add-category-btn"><i class="fas fa-plus"></i> Tambah Kategori</button>
+          </div>
+
+          <div class="table-card">
+            <table class="table" id="categories-table">
+              <thead>
+                <tr>
+                  <th width="60">ID</th>
+                  <th>Nama</th>
+                  <th width="140" class="text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- USERS -->
+        <section id="members" class="tab-content">
+          <div class="page-head">
+            <div>
+              <h2><i class="fas fa-users"></i> Users (Member)</h2>
+              <p class="muted">POST /api/users (register member) • PUT /api/users/{id} (admin/member)</p>
+            </div>
+            <button type="button" class="btn btn-primary" id="add-user-btn"><i class="fas fa-user-plus"></i> Register Member</button>
+          </div>
+
+          <div class="table-card">
+            <table class="table" id="users-table">
+              <thead>
+                <tr>
+                  <th width="60">ID</th>
+                  <th>Nama</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th width="140" class="text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- BORROW RECORDS -->
+        <section id="borrowRecords" class="tab-content">
+          <div class="page-head">
+            <div>
+              <h2><i class="fas fa-exchange-alt"></i> Borrow Records</h2>
+              <p class="muted">GET (admin/librarian) • POST (member) • PUT return (admin/librarian)</p>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <button type="button" class="btn btn-primary" id="add-borrow-btn"><i class="fas fa-book-reader"></i> Borrow (Member)</button>
+              <button type="button" class="btn btn-light" id="btn-borrow-refresh"><i class="fas fa-sync"></i> Refresh</button>
+            </div>
+          </div>
+
+          <div class="table-card">
+            <table class="table" id="borrow-table">
+              <thead>
+                <tr>
+                  <th width="60">ID</th>
+                  <th>Book</th>
+                  <th>User</th>
+                  <th>Borrowed At</th>
+                  <th>Due</th>
+                  <th>Status</th>
+                  <th width="140" class="text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <span>Built with Vanilla + Laravel API</span>
+        <span class="muted">v1.0.0</span>
+      </footer>
+    </div>
+  </div>
+
+  <!-- MODAL: BOOK -->
+  <div class="modal" id="modal-book">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 id="modal-book-title"></h3>
+        <button type="button" class="btn btn-light btn-icon" data-close="modal"><i class="fas fa-times"></i></button>
+      </div>
+
+      <form class="modal-body form" id="book-form">
+        <div class="grid-2">
+          <label class="field">
+            <span>Judul Buku *</span>
+            <input id="book_title" required placeholder="Contoh: Bumi Manusia" />
+          </label>
+
+          <label class="field">
+            <span>ISBN *</span>
+            <input id="book_isbn" required placeholder="Contoh: 978-979-97312-3-4" />
+          </label>
+        </div>
+
+        <label class="field">
+          <span>Deskripsi Buku (opsional)</span>
+          <textarea id="book_description" rows="3" placeholder="(Opsional) Karena backend belum ada kolom description..."></textarea>
+        </label>
+
+        <div class="grid-2">
+          <label class="field">
+  <span>Penulis *</span>
+  <!-- ✅ Penulis diketik -->
+  <input id="book_author_name" required placeholder="Contoh: Pramoedya Ananta Toer" />
+  <!-- ✅ author_id disimpan diam-diam untuk backend -->
+  <input id="book_author_id" type="hidden" />
+</label>
+
+
+          <label class="field">
+            <span>Kategori *</span>
+            <select id="book_category_id" class="select" required>
+              <option value="">Memuat kategori...</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="grid-3">
+          <label class="field">
+            <span>Tahun Terbit *</span>
+            <input id="book_year" type="number" min="1900" max="2100" required placeholder="1980" />
+          </label>
+
+          <label class="field">
+            <span>Stok *</span>
+            <input id="book_stock" type="number" min="0" value="1" required />
+          </label>
+
+          <label class="field">
+            <span>Status *</span>
+            <select id="book_status" class="select" required>
+              <option value="available">Tersedia</option>
+              <option value="borrowed">Dipinjam</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-light" data-close="modal">Batal</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> Simpan
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: AUTHOR -->
+  <div class="modal" id="modal-author">
+    <div class="modal-card small">
+      <div class="modal-head">
+        <h3 id="modal-author-title"></h3>
+        <button type="button" class="btn btn-light btn-icon" data-close="modal"><i class="fas fa-times"></i></button>
+      </div>
+      <form class="modal-body form" id="author-form">
+        <label class="field"><span>Nama *</span><input id="author_name" required /></label>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-light" data-close="modal">Batal</button>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CATEGORY -->
+  <div class="modal" id="modal-category">
+    <div class="modal-card small">
+      <div class="modal-head">
+        <h3 id="modal-category-title"></h3>
+        <button type="button" class="btn btn-light btn-icon" data-close="modal"><i class="fas fa-times"></i></button>
+      </div>
+      <form class="modal-body form" id="category-form">
+        <label class="field"><span>Nama *</span><input id="category_name" required /></label>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-light" data-close="modal">Batal</button>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: USER -->
+  <div class="modal" id="modal-user">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 id="modal-user-title"></h3>
+        <button type="button" class="btn btn-light btn-icon" data-close="modal"><i class="fas fa-times"></i></button>
+      </div>
+      <form class="modal-body form" id="user-form">
+        <label class="field"><span>Nama *</span><input id="user_name" required /></label>
+        <label class="field"><span>Email *</span><input id="user_email" type="email" required /></label>
+        <label class="field"><span>Password (wajib saat register)</span><input id="user_password" type="password" /></label>
+        <label class="field"><span>Role</span>
+          <select id="user_role" class="select">
+            <option value="member">member</option>
+            <option value="admin">admin</option>
+            <option value="librarian">librarian</option>
+          </select>
+        </label>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-light" data-close="modal">Batal</button>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: BORROW -->
+  <div class="modal" id="modal-borrow">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 id="modal-borrow-title"></h3>
+        <button type="button" class="btn btn-light btn-icon" data-close="modal"><i class="fas fa-times"></i></button>
+      </div>
+      <form class="modal-body form" id="borrow-form">
+        <label class="field"><span>Book ID *</span><input id="borrow_book_id" type="number" required /></label>
+        <label class="field"><span>Due Date (YYYY-MM-DD) *</span><input id="borrow_due_date" type="date" required /></label>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-light" data-close="modal">Batal</button>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Borrow</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CONFIRM -->
+  <div class="modal" id="modal-confirm">
+    <div class="modal-card small">
+      <div class="modal-head">
+        <h3><i class="fas fa-exclamation-triangle"></i> Konfirmasi</h3>
+        <button type="button" class="btn btn-light btn-icon" data-close="modal"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <p id="confirm-message">Yakin?</p>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-light" data-close="modal">Batal</button>
+          <button type="button" class="btn btn-danger" id="confirm-ok"><i class="fas fa-trash"></i> Ya</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/ui.js"></script>
+
+  <script src="js/modules/dashboard.js"></script>
+  <script src="js/modules/books.js"></script>
+  <script src="js/modules/authors.js"></script>
+  <script src="js/modules/categories.js"></script>
+  <script src="js/modules/users.js"></script>
+  <script src="js/modules/borrowRecords.js"></script>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
