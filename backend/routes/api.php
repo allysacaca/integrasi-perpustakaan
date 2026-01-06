@@ -1,69 +1,83 @@
 <?php
 
-use App\Http\Controllers\CategoryController;
-use App\Enums\UserRole;
-use App\Http\Controllers\AuthorController;
-use App\Http\Controllers\BookController;
-use App\Http\Controllers\BorrowRecordController;
-use App\Http\Controllers\UserController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\BookController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\AuthorController;
+use App\Http\Controllers\BorrowRecordController;
 
-$sanctumAUTH = 'auth:sanctum';
-$mustBeAdminOrLibrarian = 'ability:' . UserRole::ADMIN . ',' . UserRole::LIBRARIAN;
-$mustBeAdminOrMember = 'ability:' . UserRole::ADMIN . ',' . UserRole::MEMBER;
-$mustBeAdmin = 'ability:' . UserRole::ADMIN;
-$mustBeMember = 'ability:' . UserRole::MEMBER;
+/*
+|--------------------------------------------------------------------------
+| API Routes (FINAL FIXED VERSION)
+|--------------------------------------------------------------------------
+*/
 
-Route::prefix('categories')->middleware('throttle:api')->group(function () use ($sanctumAUTH, $mustBeAdminOrLibrarian) {
-    Route::get('/', [CategoryController::class, 'index']); // Siapapun bisa lihat list kategori
-    Route::post('/', [CategoryController::class, 'store'])->middleware($sanctumAUTH, $mustBeAdminOrLibrarian); // Cuma admin yg bisa nambah
-});
+// 1. PUBLIC ROUTES
+Route::post('/login', [UserController::class, 'login']);
+Route::post('/register', [UserController::class, 'register']);
 
-// --- BOOKS ROUTES ---
-Route::prefix('books')->middleware('throttle:api')->group(function () use ($sanctumAUTH, $mustBeAdminOrLibrarian, $mustBeAdmin) {
-    Route::get('/', [BookController::class, 'index']);
-    Route::get('/search', [BookController::class, 'search']);
-    Route::get('/{book}', [BookController::class, 'show']);
+// 2. PROTECTED ROUTES (Harus Login)
+Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     
-    Route::post('/', [BookController::class, 'store'])->middleware($sanctumAUTH, $mustBeAdminOrLibrarian);
-    Route::put('/{book}', [BookController::class, 'update'])->middleware($sanctumAUTH, $mustBeAdminOrLibrarian);
-    Route::delete('/{book}', [BookController::class, 'destroy'])->middleware($sanctumAUTH, $mustBeAdmin);
+    // Auth & Profile
+    Route::post('/logout', [UserController::class, 'logout']);
+    Route::get('/user', function (Request $request) { return $request->user(); });
+
     
-    // SAYA HAPUS route borrow/return disini karena sudah dipindah ke borrow-records
-});
+    // Books (Read Only)
+    Route::get('/books', [BookController::class, 'index']);
+    Route::get('/books/search', [BookController::class, 'search']);
+    Route::get('/books/{book}', [BookController::class, 'show']);
 
-// --- AUTHORS ROUTES ---
-Route::prefix('authors')->middleware('throttle:api')->group(function () use ($sanctumAUTH, $mustBeAdminOrLibrarian, $mustBeAdmin) {
-    Route::get('/', [AuthorController::class, 'index']);
-    Route::get('/{author}', [AuthorController::class, 'show']);
-    Route::post('/', [AuthorController::class, 'store'])->middleware($sanctumAUTH, $mustBeAdminOrLibrarian);
-    Route::put('/{author}', [AuthorController::class, 'update'])->middleware($sanctumAUTH, $mustBeAdminOrLibrarian);
-    Route::delete('/{author}', [AuthorController::class, 'destroy'])->middleware($sanctumAUTH, $mustBeAdmin);
-});
+    // Authors & Categories (Read Only)
+    Route::get('/authors', [AuthorController::class, 'index']);
+    Route::get('/authors/{author}', [AuthorController::class, 'show']);
+    Route::get('/categories', [CategoryController::class, 'index']);
 
-// --- USERS ROUTES ---
-Route::prefix('users')->middleware('throttle:api')->group(function () use ($sanctumAUTH, $mustBeAdmin, $mustBeAdminOrMember) {
-    Route::get('/', [UserController::class, 'index'])->middleware($sanctumAUTH, $mustBeAdmin);
-    Route::get('/{user}', [UserController::class, 'show'])->middleware($sanctumAUTH, $mustBeAdmin);
-    Route::post('/', [UserController::class, 'store']); // Register member baru
-    Route::put('/{user}', [UserController::class, 'update'])->middleware($sanctumAUTH, $mustBeAdminOrMember);
-    Route::delete('/{user}', [UserController::class, 'destroy'])->middleware($sanctumAUTH, $mustBeAdmin);
-});
+    // Borrow Records (Controller yang akan filter: Member lihat punya sendiri, Librarian lihat semua)
+    Route::get('/borrow-records', [BorrowRecordController::class, 'index']);
+    Route::get('/borrow-records/{borrowRecord}', [BorrowRecordController::class, 'show']);
 
-// --- AUTH ROUTES ---
-Route::post('/login', [UserController::class, 'login'])->middleware('throttle:api');
-Route::post('/create-librarian', [UserController::class, 'createLibrarian'])->middleware($sanctumAUTH, $mustBeAdmin);
+    Route::put('/users/{user}', [UserController::class, 'update']);
 
-// --- BORROW RECORDS ROUTES (YANG KITA KERJAKAN TADI) ---
-Route::prefix('borrow-records')->middleware('throttle:api')->group(function () use ($sanctumAUTH, $mustBeAdminOrLibrarian, $mustBeMember) {
+    // --- KHUSUS MEMBER ---
+    Route::middleware('ability:MEMBER')->group(function () {
+        // Member hanya bisa meminjam (POST)
+        Route::post('/borrow-records', [BorrowRecordController::class, 'store']);
+    });
+
     
-    // 1. Melihat Data Peminjaman (Admin/Pustakawan)
-    Route::get('/', [BorrowRecordController::class, 'index'])->middleware($sanctumAUTH, $mustBeAdminOrLibrarian);
-    Route::get('/{borrowRecord}', [BorrowRecordController::class, 'show'])->middleware($sanctumAUTH, $mustBeAdminOrLibrarian);
+    Route::middleware('ability:LIBRARIAN')->group(function () {
+        
+        // CRUD Books
+        Route::post('/books', [BookController::class, 'store']);
+        Route::put('/books/{book}', [BookController::class, 'update']);
+        Route::delete('/books/{book}', [BookController::class, 'destroy']);
 
-    // 2. Meminjam Buku (POST) -> Biasanya dilakukan Member
-    Route::post('/', [BorrowRecordController::class, 'store'])->middleware($sanctumAUTH, $mustBeMember);
+        // CRUD Authors
+        Route::post('/authors', [AuthorController::class, 'store']);
+        Route::put('/authors/{author}', [AuthorController::class, 'update']);
+        Route::delete('/authors/{author}', [AuthorController::class, 'destroy']);
 
-    // 3. Mengembalikan Buku (PUT) -> Biasanya dilakukan Pustakawan untuk cek denda & fisik buku
-    Route::put('/{borrowRecord}', [BorrowRecordController::class, 'update'])->middleware($sanctumAUTH, $mustBeAdminOrLibrarian);
+        // CRUD Categories
+        Route::post('/categories', [CategoryController::class, 'store']);
+
+        // CRUD Users
+        Route::get('/users', [UserController::class, 'index']);
+        Route::get('/users/{user}', [UserController::class, 'show']);
+        Route::delete('/users/{user}', [UserController::class, 'destroy']);
+        
+        // Pengembalian Buku
+        Route::put('/borrow-records/{borrowRecord}', [BorrowRecordController::class, 'update']);
+    });
+
+    // Route Debugging (Bisa dihapus nanti)
+    Route::get('/cek-status-saya', function (Request $request) {
+        return response()->json([
+            'role_db' => $request->user()->role,
+            'token_ability' => $request->user()->currentAccessToken()->abilities
+        ]);
+    });
 });
