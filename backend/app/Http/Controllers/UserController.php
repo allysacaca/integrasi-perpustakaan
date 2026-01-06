@@ -2,22 +2,25 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\UserRole;
-use App\Http\Requests\CreateLibrarianRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
+    // LOGIN
     public function login(LoginRequest $request)
     {
-        if (Auth::attempt($request->all('email', 'password'))) {
+        // Cek email & password
+        if (Auth::attempt($request->only('email', 'password'))) {
             $user = auth()->user();
-            $token = $user->createToken('AUTH', [$user->role])->plainTextToken;
+            
+            
+            $token = $user->createToken('auth_token', [$user->role])->plainTextToken;
 
             return respondSuccess("Login successful", [
                 "user" => $user,
@@ -27,77 +30,83 @@ class UserController extends Controller
 
         return respondError("Email or password incorrect", 401);
     }
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        $limit = request("limit", 15);
 
-        $users = User::paginate($limit);
-        return respondSuccess("Users", $users);
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreUserRequest $request)
+    // REGISTER
+    public function register(StoreUserRequest $request)
     {
         $user = User::create([
             "name" => $request->name,
             "email" => $request->email,
             "password" => Hash::make($request->password),
+            "role" => 'MEMBER', 
         ]);
 
-        $token = $user->createToken("AUTH", [UserRole::MEMBER])->plainTextToken;
+        // Berikan token MEMBER
+        $token = $user->createToken("auth_token", ['MEMBER'])->plainTextToken;
 
-        return respondSuccess("User successfully created", [
+        return respondSuccess("Registration successful", [
             "user" => $user,
             "token" => $token,
         ], 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(User $user)
+    // LOGOUT
+    public function logout(Request $request)
     {
-        return respondSuccess("User", $user);
+        $request->user()->currentAccessToken()->delete();
+        return respondSuccess("Logout successful");
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
+    // get all users (Librarian only)
+    public function index()
+    {
+        $limit = request("limit", 15);
+        $users = User::paginate($limit);
+        return respondSuccess("Users list", $users);
+    }
+
+    // get user detail (Librarian only)
+    public function show(User $user)
+    {
+        return respondSuccess("User detail", $user);
+    }
+
+    // update user (Librarian bisa update semua, Member hanya dirinya sendiri)
     public function update(UpdateUserRequest $request, User $user)
     {
-        if (auth()->user()->role === UserRole::ADMIN || auth()->user()->id === $user->id) {
-            $user->update($request->all());
+    
+        if (auth()->user()->role === 'LIBRARIAN' || auth()->user()->id === $user->id) {
+            
+            $data = $request->all();
+            
+            // Jika password diisi, enkripsi 
+            if ($request->filled('password')) {
+                $data['password'] = Hash::make($request->password);
+            }
+
+            // Cegah Member mengubah role dirinya sendiri jadi Librarian
+            if (auth()->user()->role !== 'LIBRARIAN' && isset($data['role'])) {
+                unset($data['role']); 
+            }
+
+            $user->update($data);
 
             return respondSuccess("User successfully updated", $user);
         }
-        return respondError("Forbidden", 403);
+
+        // Jika bukan Librarian dan bukan diri sendiri maka ditolak
+        return respondError("Forbidden access", 403);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
+    // delete user (librarian only)
     public function destroy(User $user)
     {
+        
+        if (auth()->user()->role !== 'LIBRARIAN') {
+             return respondError("Forbidden. Only Librarian can delete users.", 403);
+        }
+
         $user->delete();
-
         return respondSuccess("User successfully deleted");
-    }
-
-    public function createLibrarian(CreateLibrarianRequest $request)
-    {
-        $user = User::create([
-            "name" => $request->name,
-            "email" => $request->email,
-            "password" => Hash::make($request->password),
-            "role" => UserRole::LIBRARIAN,
-        ]);
-
-
-        return respondSuccess("User successfully created", $user, 201);
     }
 }

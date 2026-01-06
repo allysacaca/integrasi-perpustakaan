@@ -24,7 +24,7 @@ class UserFactory extends Factory
             'name' => $this->faker->name(),
             'email' => $this->faker->safeEmail(),
             'password' => $this->faker->password(),
-            'role' => $this->faker->randomElement(["ADMIN","LIBRARIAN","MEMEBER"]),
+            'role' => $this->faker->randomElement(["ADMIN","LIBRARIAN",]),
         ];
     }
 }
