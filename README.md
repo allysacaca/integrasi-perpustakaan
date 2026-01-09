@@ -36,3 +36,22 @@ Technology Stack
 - Authentication: Laravel Sanctum
 - API Testing & Documentation: Postman
 
+API Characteristics
+
+RESTful endpoints
+
+JSON request & response
+
+Proper HTTP status codes (200, 201, 400, 401, 404, 500)
+
+Secure endpoints using middleware
+
+Role-based access enforcement
+
+Documentation
+
+API Documentation tersedia melalui Postman
+
+Database schema tersedia dalam bentuk migration Laravel
+
+Source code dikelola menggunakan Git dengan commit history yang jelas
