@@ -4,17 +4,46 @@ Library Management API adalah sistem Manajemen Perpustakaan Digital yang dibangu
 Aplikasi ini digunakan untuk mengelola data buku, penulis, pengguna, serta transaksi peminjaman dan pengembalian buku, dengan mekanisme autentikasi berbasis token dan kontrol akses berbasis role.
 Proyek ini dikembangkan untuk memenuhi Tugas Besar Mata Kuliah Integrasi Aplikasi.
 
+Tujuan Pengembangan
+
+Proyek ini bertujuan untuk:
+
+Menerapkan konsep REST API dalam komunikasi antar aplikasi
+
+Mengimplementasikan arsitektur service-oriented / microservices sederhana
+
+Menggunakan JSON sebagai format pertukaran data
+
+Mengimplementasikan GraphQL sebagai alternatif REST API
+
+Menerapkan token-based authentication
+
+Mengembangkan kemampuan problem solving dalam integrasi sistem
+
 ## Features
-Books
-- Create, update, delete, search books
-- Borrow and return books
+Book Management (CRUD)
 
-Users
-- User registration & login
-- Role-based access control (Admin, Librarian, Member)
+Menambah data buku
 
-Borrow Records
-- Track borrowing and returning transactions
+Mengubah data buku
+
+Menghapus data buku
+
+Melihat daftar buku
+
+Melihat detail buku
+
+Pencarian buku
+
+Borrow & Return Transaction
+
+Peminjaman buku
+
+Pengembalian buku
+
+Pencatatan transaksi peminjaman
+
+Riwayat peminjaman anggota
 
 Authentication
 - Token-based authentication using Laravel Sanctum
