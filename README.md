@@ -2,7 +2,7 @@ Library Management API
 
 Library Management API adalah sistem Manajemen Perpustakaan Digital yang dibangun menggunakan Laravel 10 dan menerapkan konsep Integrasi Aplikasi melalui REST API (serta opsional GraphQL).
 Aplikasi ini digunakan untuk mengelola data buku, penulis, pengguna, serta transaksi peminjaman dan pengembalian buku, dengan mekanisme autentikasi berbasis token dan kontrol akses berbasis role.
-Proyek ini dikembangkan untuk memenuhi Tugas Besar Mata Kuliah Integrasi Aplikasi.
+Proyek ini dikembangkan untuk memenuhi Tugas Besar Mata Kuliah Integrasi Aplikasi serta sebagai implementasi praktis konsep integrasi sistem berbasis API.
 
 Tujuan Pengembangan
 
@@ -84,3 +84,4 @@ API Documentation tersedia melalui Postman
 Database schema tersedia dalam bentuk migration Laravel
 
 Source code dikelola menggunakan Git dengan commit history yang jelas
+
